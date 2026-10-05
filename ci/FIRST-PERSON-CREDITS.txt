@@ -1,0 +1,8 @@
+First-person view for Shroudtopia
+
+Original Shroudtopia and first-person mod: s0T7x / Miguel Oppermann.
+Steam client compatibility and stamina HUD maintenance: Aerox912.
+License: MIT; see LICENSE. Requires the original Shroudtopia loader.
+Enshrouded and its game assets belong to Keen Games.
+
+Close the game before replacing mods/first_person_view.dll. Configure the mod in shroudtopia.json. To remove it, close the game and remove that DLL; keep the loader if another mod needs it.

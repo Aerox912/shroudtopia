@@ -31,7 +31,7 @@ public:
     }
 
     template <typename t>
-    inline static t get(const char* key, t defaultValue = t) {
+    inline static t get(const char* key, t defaultValue = t{}) {
         try {
             return jConfig[key].get<t>();
         }
@@ -41,7 +41,7 @@ public:
     }
 
     template <typename t>
-    inline static t modGet(const char* modKey, const char* key, t defaultValue = t) {
+    inline static t modGet(const char* modKey, const char* key, t defaultValue = t{}) {
         try {
             return jConfig["mods"][modKey][key].get<t>();
         }

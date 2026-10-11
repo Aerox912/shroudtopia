@@ -17,9 +17,9 @@ ModContext* modContext;
 json Config::jConfig;
 std::filesystem::file_time_type Config::lastModifiedTime;
 
-std::map<std::string, HMODULE> loadedDLLs;
+#include "mod_loader.h"
 
-typedef Mod* (*CreateModFunc)();
+
 std::string activeModName = "";
 
 // Unload a DLL and log the operation
@@ -49,39 +49,9 @@ void ProcessModManifestConfig(const std::string& modId, const json& manifest) {
     }
 }
 
-// Load a mod and register it
-void LoadAndRegisterMod(const std::string& dllPath) {
-    if (loadedDLLs.count(dllPath)) return;
-
-    Utils::Log(Utils::DEBUG, "Attempting to load: %s", dllPath.c_str());
-
-    HMODULE hMod = LoadLibraryA(dllPath.c_str());
-    if (!hMod) {
-        Utils::Log(Utils::ERRR, "Failed to load DLL: %s", dllPath.c_str());
-        return;
-    }
-
-    CreateModFunc createMod = (CreateModFunc)GetProcAddress(hMod, "CreateModInstance");
-    if (!createMod) {
-        Utils::Log(Utils::ERRR, "CreateModInstance not found in: %s", dllPath.c_str());
-        FreeLibrary(hMod);
-        return;
-    }
-
-    Mod* modInstance = createMod();
-    if (!modInstance) {
-        Utils::Log(Utils::ERRR, "Failed to create mod instance for: %s", dllPath.c_str());
-        FreeLibrary(hMod);
-        return;
-    }
-
-    loadedDLLs[dllPath] = hMod;
-    modContext->registeredMods[dllPath] = modInstance;
-    Utils::Log(Utils::INFO, "Registered mod: %s", modInstance->GetMetaData().name.c_str());
-}
-
 // Check for new mods using EML logic + legacy fallback
 void CheckAndLoadDlls(const std::string& modFolder = SHROUDTOPIA_MOD_FOLDER) {
+    PruneIncompatibleDlls();
     if (!fs::exists(modFolder)) {
         fs::create_directory(modFolder);
         return;
@@ -327,9 +297,11 @@ bool ModContext_InjectShellcode(uint8_t* opcode, size_t opcodeSize, uintptr_t ne
     if (injectedAt) *injectedAt = shellcode.data->address;
     if (shellcode.inject()) {
         ModLog(std::string("Successfully injected shellcode at address: ").append(std::to_string(shellcode.data->address)).c_str());
+        return true;
     }
     else {
         ModLog("Failed to inject shellcode");
+        return false;
     }
 }
 

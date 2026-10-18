@@ -1,8 +1,9 @@
 # First-person view
 
-Restores the first-person camera on Steam client data revision 1076226. The
-original camera signature is absent on this client, and the old activation path
-could dereference an uninitialized hook when no match was found.
+Restores the first-person camera on Steam client data revision 1076226 and
+hotfixes that retain the validated camera layout. The original camera signature
+is absent on this client, and the old activation path could dereference an
+uninitialized hook when no match was found.
 
 The mod now checks the executable layout before installing its camera hook.
 Unsupported layouts log a message and remain inactive. Older clients retain the
@@ -37,9 +38,10 @@ Replacing the DLL requires a game restart.
 
 ## Camera hook
 
-The current-client path verifies PE timestamp 1782724296, image size 0x2DA7000,
+The current-client path ignores PE timestamp and exact image size. It verifies
 the named `player_camera_transform` registry descriptor, the original call and
-callee entry, and the camera-distance field read.
+callee entry, and the camera-distance field read before installing the hook.
+Hotfixes that move these RVAs or change these instructions remain unsupported.
 
 The local-player camera system at RVA 0x2662A0 calls the native transform at
 0xCB9C10 from 0x2663D3. At that call, RDX points to `LocalPlayerCamera` and RCX to
@@ -52,7 +54,7 @@ so the two hooks can coexist. An already modified call site is rejected.
 
 ## First-person stamina HUD
 
-On the supported current client, the complete stamina gauge stays at 45% of the HUD
+When the stamina signatures match, the complete stamina gauge stays at 45% of the HUD
 canvas width and 50% of its height while FirstPersonView is active. Its size,
 colours, animation and stamina values retain the game's behaviour. Switching
 back to third person restores the native position. Canvas dimensions are read

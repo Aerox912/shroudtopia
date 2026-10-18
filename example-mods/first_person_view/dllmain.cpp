@@ -8,7 +8,7 @@
 ModMetaData metaData = {
     "FirstPersonView",
     "Enables simple but immersive 1st Person view. (Client only)",
-    "1.1.1",
+    "1.1.2",
     "s0T7x",
     "0.1.1",
     true,
@@ -29,15 +29,9 @@ namespace FirstPerson
     {
         if (context == nullptr || !context->config.GetFloat)
             return previous;
-        try
-        {
-            const float value = context->config.GetFloat("FirstPersonView", "camera_distance", FirstPersonDistance);
-            return ValidCameraDistance(value) ? value : previous;
-        }
-        catch (...)
-        {
-            return previous;
-        }
+        return ReadCameraDistanceSetting([&](float fallback) {
+            return context->config.GetFloat("FirstPersonView", "camera_distance", fallback);
+        }, previous);
     }
 
     void SetCameraDistance(Mem::Detour& hook, float distance)
@@ -110,7 +104,7 @@ public:
             return;
         }
 
-        if (target.kind == FirstPerson::HookKind::Client1076226)
+        if (target.kind == FirstPerson::HookKind::VerifiedCameraLayout)
         {
             auto code = FirstPerson::CameraStub();
             mod = new Mem::Detour(target.address, code.data(), code.size(), false, 0);
@@ -130,8 +124,8 @@ public:
             mod->shellcode->updateValue<std::int32_t>(FirstPerson::StubReturnDisplacement, returnDelta);
             configurableDistance = true;
             RefreshCameraDistance(modContext);
-            modContext->Log("[FirstPerson] camera hook prepared for client 1076226; minimap entry preserved");
-            FirstPerson::ReportStaminaHudStatus(modContext, staminaHud.Prepare(image));
+            modContext->Log("[FirstPerson] verified camera hook prepared; minimap entry preserved");
+            FirstPerson::ReportStaminaHudStatus(modContext, staminaHud.Prepare(image, target.imageSize));
         }
         else
         {

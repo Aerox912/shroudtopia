@@ -47,7 +47,7 @@ void TestStaminaHud(std::vector<std::uint8_t>& image)
     const std::uint8_t position[]={0xE8,0x9A,0x62,0x4D,0};
     std::memcpy(image.data()+0xAA6236,layout,5);
     std::memcpy(image.data()+0xAA6281,position,5);
-    Check(MatchesStaminaLayout(image.data(),image.size()),"accept verified shared stamina layout");
+    Check(MatchesStaminaLayout(image.data(),image.size()),"accept verified shared stamina layout after image size changes");
     image[StaminaLayoutSite]=0xE9;
     Check(!MatchesStaminaLayout(image.data(),image.size()),"reject existing stamina hook");
     image[StaminaLayoutSite]=0x0F;

@@ -20,7 +20,7 @@ namespace FirstPerson
         const std::array<std::uint8_t, 9> canvas = { 0x48,0x8B,0x41,0x10,0x48,0x83,0xC0,0x20,0xC3 };
         const std::array<std::uint8_t,5> layout = {0xE8,0x15,0x6A,0x13,0x00};
         const std::array<std::uint8_t,5> position = {0xE8,0x9A,0x62,0x4D,0x00};
-        return size == ClientImageSize &&
+        return image != nullptr &&
             Matches(image,size,0xAA6236,layout) && Matches(image,size,0xAA6281,position) &&
             Matches(image,size,StaminaLayoutSite,StaminaLayoutInstructions) &&
             Matches(image,size,0xBB3260,renderer) && Matches(image,size,0xBB338C,context) &&
@@ -117,11 +117,11 @@ namespace FirstPerson
             if (hook && hook->active)
                 InterlockedExchange(reinterpret_cast<volatile LONG*>(hook->shellcode->data->address+enabledOffset),enabled?1:0);
         }
-        bool Prepare(const std::uint8_t* image)
+        bool Prepare(const std::uint8_t* image, std::size_t imageSize)
         {
             if (hook) return true;
-            // Load calls this only after the camera's PE/version gate succeeds.
-            if (!MatchesStaminaLayout(image,ClientImageSize)) return false;
+            // Load calls this only after the camera layout has been verified.
+            if (!MatchesStaminaLayout(image,imageSize)) return false;
             const auto base=reinterpret_cast<uintptr_t>(image);
             auto code=BuildStaminaStub(base+UiContextPointer);
             const auto site=base+StaminaLayoutSite;

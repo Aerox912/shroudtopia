@@ -1,5 +1,4 @@
 #pragma once
-#include "camera_settings.h"
 #include <windows.h>
 #include <array>
 #include <cmath>
@@ -10,6 +9,8 @@
 
 namespace FirstPerson
 {
+    constexpr std::uint32_t ClientTimestamp = 1782724296;
+    constexpr std::size_t ClientImageSize = 0x2DA7000;
     constexpr std::size_t CameraSystemDescriptor = 0x1D43630;
     constexpr std::size_t CameraSystemName = 0x1D443E0;
     constexpr std::size_t CameraSystemFunction = 0x2662A0;
@@ -17,16 +18,21 @@ namespace FirstPerson
     constexpr std::size_t CameraTransformFunction = 0xCB9C10;
     constexpr std::size_t ShoulderOffset = 0xED4;
     constexpr std::size_t DistanceOffset = 0xEF0;
+    constexpr float FirstPersonDistance = -0.15f;
     constexpr std::size_t StubCallDisplacement = 25;
     constexpr std::size_t StubReturnDisplacement = 30;
     constexpr std::size_t StubDistance = 36;
 
-    enum class HookKind { Unsupported, Legacy, VerifiedCameraLayout };
+    bool ValidCameraDistance(float distance)
+    {
+        return std::isfinite(distance) && distance >= -0.5f && distance <= 0.5f;
+    }
+
+    enum class HookKind { Unsupported, Legacy, Client1076226 };
     struct HookTarget
     {
         HookKind kind = HookKind::Unsupported;
         uintptr_t address = 0;
-        std::size_t imageSize = 0;
     };
 
     template <std::size_t N>
@@ -50,9 +56,7 @@ namespace FirstPerson
             return {};
         const std::size_t imageSize = nt->OptionalHeader.SizeOfImage;
         const auto base = reinterpret_cast<uintptr_t>(image);
-        // Hotfixes can change PE metadata without moving this camera path.
-        // Keep matching the registry and instruction layout before patching.
-        if (CameraSystemDescriptor <= imageSize && sizeof(uintptr_t) * 3 <= imageSize - CameraSystemDescriptor)
+        if (nt->FileHeader.TimeDateStamp == ClientTimestamp && imageSize == ClientImageSize)
         {
             // The minimap hooks the camera system entry. Identify it from the
             // registry and patch a separate call site inside that same system.
@@ -69,13 +73,12 @@ namespace FirstPerson
             };
             if (descriptor[0] != base + CameraSystemName || descriptor[1] != sizeof(name) - 1 ||
                 descriptor[2] != base + CameraSystemFunction ||
-                CameraSystemName > imageSize || sizeof(name) > imageSize - CameraSystemName ||
                 std::memcmp(image + CameraSystemName, name, sizeof(name)) != 0 ||
                 !Matches(image, imageSize, CameraTransformCall, call) ||
                 !Matches(image, imageSize, CameraTransformFunction, transformEntry) ||
                 !Matches(image, imageSize, 0xCB9E21, distanceRead))
                 return {};
-            return { HookKind::VerifiedCameraLayout, base + CameraTransformCall, imageSize };
+            return { HookKind::Client1076226, base + CameraTransformCall };
         }
 
         // Retain the old mod's hook only for a unique match in executable code.
@@ -99,7 +102,7 @@ namespace FirstPerson
                 found = base + start + offset;
             }
         }
-        return found ? HookTarget{ HookKind::Legacy, found, imageSize } : HookTarget{};
+        return found ? HookTarget{ HookKind::Legacy, found } : HookTarget{};
     }
 
     bool RelativeDisplacement(uintptr_t nextInstruction, uintptr_t target, std::int32_t& result)

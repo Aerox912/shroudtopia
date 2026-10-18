@@ -37,8 +37,9 @@ int main()
 {
     using namespace FirstPerson;
     Check(FindTarget(nullptr).kind == HookKind::Unsupported, "reject absent image");
-    std::vector<std::uint8_t> image(0x2DA7000);
+    std::vector<std::uint8_t> image(ClientImageSize);
     auto* nt = SetImageHeaders(image);
+    nt->FileHeader.TimeDateStamp = ClientTimestamp;
     const auto base = reinterpret_cast<uintptr_t>(image.data());
     const char name[] = "player_camera_transform";
     const uintptr_t descriptor[] = { base + CameraSystemName, sizeof(name) - 1, base + CameraSystemFunction };
@@ -52,7 +53,7 @@ int main()
     std::memcpy(image.data() + 0xCB9E21, distance, sizeof(distance));
     Check(FindTarget(image.data()).address == base + CameraTransformCall, "resolve verified current camera call");
     image[CameraSystemFunction] = 0xE9;
-    Check(FindTarget(image.data()).kind == HookKind::VerifiedCameraLayout, "coexist with minimap entry detour");
+    Check(FindTarget(image.data()).kind == HookKind::Client1076226, "coexist with minimap entry detour");
     image[CameraSystemName] = 'X';
     Check(FindTarget(image.data()).kind == HookKind::Unsupported, "reject wrong named system");
     image[CameraSystemName] = 'p';
@@ -62,18 +63,8 @@ int main()
     image[0xCB9E21 + 4] = 0xF4;
     Check(FindTarget(image.data()).kind == HookKind::Unsupported, "reject changed camera field layout");
     image[0xCB9E21 + 4] = 0xF0;
-    image.resize(0x2DA8000);
-    nt = SetImageHeaders(image);
     nt->FileHeader.TimeDateStamp = 0;
-    const auto hotfixBase = reinterpret_cast<uintptr_t>(image.data());
-    const uintptr_t hotfixDescriptor[] = { hotfixBase + CameraSystemName, sizeof(name) - 1, hotfixBase + CameraSystemFunction };
-    std::memcpy(image.data() + CameraSystemDescriptor, hotfixDescriptor, sizeof(hotfixDescriptor));
-    const auto hotfixTarget = FindTarget(image.data());
-    Check(hotfixTarget.address == hotfixBase + CameraTransformCall && hotfixTarget.imageSize == image.size(),
-        "accept hotfix with changed PE timestamp and image size when camera signatures match");
-    image[CameraTransformCall] = 0xE9;
-    Check(FindTarget(image.data()).kind == HookKind::Unsupported,
-        "reject hotfix with changed camera call signature");
+    Check(FindTarget(image.data()).kind == HookKind::Unsupported, "reject unrecognized client without legacy hook");
 
     std::vector<std::uint8_t> legacy(0x1000);
     auto* legacyNt = SetImageHeaders(legacy);

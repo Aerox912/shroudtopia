@@ -21,7 +21,7 @@ jobs:
       shell: cmd
     - name: build_proxy
       run: |
-        MSBuild "shroudtopia.sln" /t:winmm /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
+        MSBuild "winmm\winmm.vcxproj" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
       shell: cmd
     - name: upload
       uses: actions/upload-artifact@v4

@@ -154,6 +154,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="defines.h" />
     <ClInclude Include="mem.h" />
+    <ClInclude Include="mod_loader.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>

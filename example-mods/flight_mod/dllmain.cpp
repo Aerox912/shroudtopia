@@ -1,83 +1,39 @@
 #include "pch.h"
-
 #include <shroudtopia.h>
-#include <memory_utils.h>
+#include "flight_patch.h"
+#include "notice.h"
 
-ModMetaData metaData = {
-    "Flight Mod",
-    "Enables free glider flight.",
-    "1.0",
-    "s0T7x",
-    "0.0.1",
-    true,
-    true,
-};
-
-
-// Signature for GameVersion (SVN) 637515
-class FlightMod : public Mod
-{
-    Mem::Detour* mod;
+class FlightMod : public Mod {
+    Flight::Patch patch;
+    Flight::Toggle toggle;
+    FlightNotice notice;
+    bool prepared=false;
+    int key=VK_F6;
 public:
-    void Load(ModContext* modContext)
-    {
-        // F3 0F 10 05 ?? ?? ?? ?? F2 0F 11 4C 24 60
-        const char* pattern = "\xF3\x0F\x10\x05\x00\x00\x00\x00\xF2\x0F\x11\x4C";
-        const char* mask = "xxxx????xxxx";
-
-        uintptr_t baseAddress = (uintptr_t)GetModuleHandle(NULL);
-        uintptr_t address = Mem::FindPattern(pattern, mask, baseAddress, 0x1000000); // Scan 16MB
-
-        if (address)
-        {
-            uint8_t modCode[] = {
-                0xF3, 0x0F, 0x10, 0x05, 0x05, 0x00, 0x00, 0x00, // movss xmm0, [GlideData]
-                0xE9, 0x00, 0x00, 0x00, 0x00,
-                0xc3, 0xf5, 0xc8, 0xbf };
-            mod = new Mem::Detour(address, modCode, sizeof(modCode), false, 3);
-            mod->shellcode->updateValue<uint32_t>(9, (uint32_t)(mod->patch->data->address + mod->patch->data->size) - ((uint32_t)((uintptr_t)mod->shellcode->data->address + mod->shellcode->data->size - 7)));
-        }
+    ModMetaData GetMetaData() override {return {"Flight Mod","Toggle free glider flight. Starts off on activation.","1.1.0","s0T7x; maintained by Aerox912","0.1.1",true,false};}
+    void Load(ModContext* c) override {
+        if(!c->game.isClient || prepared)return;
+        prepared=patch.prepare(Flight::FindTarget(reinterpret_cast<const std::uint8_t*>(GetModuleHandleW(nullptr))));
+        c->Log(prepared ? "[Flight] verified client 1076226; press F6 (or configured key) to toggle" : "[Flight] unsupported layout; vanilla flight retained");
     }
-
-    void Unload(ModContext* modContext) {
-        if (mod) delete mod;
+    void Activate(ModContext* c) override {
+        if(active||!prepared)return;
+        active=patch.install();toggle={};patch.enable(false);
+        if(!active)c->Log("[Flight] patch installation failed; toggle unavailable");
     }
-
-    void Activate(ModContext* modContext) {
-        active = mod->activate();
-        modContext->Log(std::string().append(metaData.name).append(" activated").c_str());
-    }
-
-    void Deactivate(ModContext* modContext) {
-        mod->deactivate();
-        active = false;
-        modContext->Log(std::string().append(metaData.name).append(" deactivated").c_str());
-    }
-
-    void Update(ModContext* modContext) { }
-
-    ModMetaData GetMetaData() {
-        return metaData;
+    void Deactivate(ModContext*) override {patch.enable(false);toggle={};notice.dismiss();active=false;}
+    void Unload(ModContext*) override {notice.release();patch.release();prepared=false;active=false;loaded=false;}
+    void Update(ModContext* c) override {
+        if(!active)return;
+        const int next=c->config.GetInt ? c->config.GetInt("Flight Mod","toggle_key",VK_F6) : VK_F6;
+        if(next!=key){key=next;toggle.armed=false;}
+        auto game=GetForegroundWindow();DWORD pid=0;GetWindowThreadProcessId(game,&pid);
+        CURSORINFO cursor{sizeof(CURSORINFO)};
+        const bool focused=pid==GetCurrentProcessId() && (!GetCursorInfo(&cursor)||(cursor.flags&CURSOR_SHOWING)==0);
+        const bool down=key>0&&key<255&&(GetAsyncKeyState(key)&0x8000)!=0;
+        if(toggle.sample(down,focused)) {patch.enable(toggle.on);notice.show(toggle.on);c->Log(toggle.on ? "[Flight] on" : "[Flight] off");}
+        notice.update(focused?game:nullptr);
     }
 };
-
-extern "C" __declspec(dllexport) Mod* CreateModInstance() {
-    return new FlightMod();
-}
-
-BOOL APIENTRY DllMain(HMODULE hModule,
-    DWORD  ul_reason_for_call,
-    LPVOID lpReserved
-)
-{
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-    case DLL_THREAD_ATTACH:
-    case DLL_THREAD_DETACH:
-    case DLL_PROCESS_DETACH:
-        break;
-    }
-    return TRUE;
-}
-
+extern "C" __declspec(dllexport) Mod* CreateModInstance(){return new FlightMod();}
+BOOL APIENTRY DllMain(HMODULE,DWORD,LPVOID){return TRUE;}

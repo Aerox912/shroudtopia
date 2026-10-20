@@ -12,11 +12,11 @@ jobs:
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build_core
       run: |
-        MSBuild "shroudtopia\shroudtopia.sln" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
+        MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
       shell: cmd
     - name: build_proxy
       run: |
-        MSBuild "winmm\winmm.sln" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
+        MSBuild "shroudtopia.sln" /t:winmm /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
       shell: cmd
     - name: upload
       uses: actions/upload-artifact@v4

@@ -12,6 +12,9 @@ jobs:
       with:
         submodules: recursive
     - uses: ilammy/msvc-dev-cmd@v1
+    - name: configure_funchook
+      run: cmake -S third-party/funchook -B third-party/funchook/build -G "Visual Studio 17 2022" -A x64
+      shell: cmd
     - name: build_core
       run: |
         MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64

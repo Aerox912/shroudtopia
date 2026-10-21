@@ -16,9 +16,20 @@ jobs:
       run: |
         MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
       shell: cmd
+    - name: test_manifest_discovery
+      run: |
+        cmake -S shroudtopia/tests -B build/loader-tests -A x64
+        if errorlevel 1 exit /b 1
+        cmake --build build/loader-tests --config Release
+        if errorlevel 1 exit /b 1
+        ctest --test-dir build/loader-tests -C Release --output-on-failure
+      shell: cmd
+    - name: package_release
+      shell: pwsh
+      run: ./ci/package-shroudtopia-release.ps1
     - name: upload
       uses: actions/upload-artifact@v4
       with:
-        name: shroudtopia-win-x64
-        path: ${{ github.workspace }}/build/shroudtopia.dll
+        name: shroudtopia-release
+        path: dist/*
         if-no-files-found: error

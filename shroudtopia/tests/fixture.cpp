@@ -34,5 +34,9 @@ extern "C" __declspec(dllexport) Mod* CreateModInstance() {
     return new Fixture;
 }
 #else
+#ifdef FLAME_MOD
+extern "C" __declspec(dllexport) void FlameStartRuntime() {}
+#else
 extern "C" __declspec(dllexport) void XhlNativePluginQuery() {}
+#endif
 #endif

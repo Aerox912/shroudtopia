@@ -9,19 +9,16 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        submodules: recursive
     - uses: ilammy/msvc-dev-cmd@v1
     - name: build_core
       run: |
-        MSBuild "shroudtopia\shroudtopia.sln" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
-      shell: cmd
-    - name: build_proxy
-      run: |
-        MSBuild "winmm\winmm.sln" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
+        MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
       shell: cmd
     - name: upload
       uses: actions/upload-artifact@v4
       with:
-        name: win_x64
-        path: |
-          ${{ github.workspace }}/build/*.dll
-          ${{ github.workspace }}/build/mods/**/*.dll
+        name: shroudtopia-win-x64
+        path: ${{ github.workspace }}/build/shroudtopia.dll
+        if-no-files-found: error

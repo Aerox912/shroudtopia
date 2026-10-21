@@ -19,6 +19,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: recursive
       - name: Verify and package the accepted runtime DLLs
         shell: pwsh
         env:

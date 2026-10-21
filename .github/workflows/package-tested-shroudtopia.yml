@@ -1,0 +1,35 @@
+name: Package tested Shroudtopia
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/package-tested-shroudtopia.yml'
+      - 'ci/package-tested-shroudtopia.py'
+      - 'ci/package-shroudtopia-release.ps1'
+      - 'ci/test-shroudtopia-package.ps1'
+      - 'docs/releases/0.2.1-shroudweave.1.md'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify and package the accepted runtime DLLs
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGING_SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: python ci/package-tested-shroudtopia.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shroudtopia-tested-runtime-release
+          path: |
+            dist/*.zip
+            dist/*.sha256
+            dist/TESTED-PACKAGE-RECEIPT.json
+          if-no-files-found: error

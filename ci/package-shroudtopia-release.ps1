@@ -30,6 +30,7 @@ Copy-Item -LiteralPath (Join-Path $root 'release\default-configs\shroudtopia.jso
 Copy-Item -LiteralPath (Join-Path $root 'LICENSE') -Destination $stage
 Copy-Item -LiteralPath (Join-Path $root 'third-party\nlohmann-json\LICENSE.MIT') -Destination (Join-Path $stage 'LICENSE-nlohmann-json.txt')
 Copy-Item -LiteralPath (Join-Path $root 'ci\SHROUDTOPIA-CREDITS.txt') -Destination (Join-Path $stage 'CREDITS.txt')
+Copy-Item -LiteralPath (Join-Path $root 'third-party\minhook-1.3.4\LICENSE.txt') -Destination (Join-Path $stage 'MinHook-LICENSE.txt')
 Copy-Item -LiteralPath (Join-Path $root "docs\releases\$version.md") -Destination (Join-Path $stage 'RELEASE-NOTES.md')
 @'
 Shroudweave Shroudtopia is an independent community release of the Shroudtopia compatibility loader.

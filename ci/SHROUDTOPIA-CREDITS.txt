@@ -4,4 +4,10 @@ The original Shroudtopia MIT license is included as LICENSE.
 JSON for Modern C++ (nlohmann-json) is included in the build from its upstream
 MIT-licensed project. Its license notice is included as LICENSE-nlohmann-json.txt.
 
+MinHook 1.3.4 by Tsuda Kageyu, with retained Shroudweave suspension fixes, is
+statically linked into the resident detour service. Its BSD notices and the
+included Hacker Disassembler Engine notices are preserved in MinHook-LICENSE.txt.
+The resident service is first-party Shroudweave code; no ShroudForge runtime or
+external ESM bridge is required by this native Shroudtopia loader.
+
 Enshrouded is a trademark of Keen Games. This is an independent community project.

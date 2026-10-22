@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - fix/creative300-discovery
+      - fix/flight-detour-service
   pull_request:
     branches:
       - main
@@ -13,22 +14,27 @@ on:
 jobs:
   windows:
     name: win_x64
-    runs-on: windows-latest
+    runs-on: windows-2022
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: recursive
     - uses: ilammy/msvc-dev-cmd@v1
+      with:
+        toolset: 14.44
     - name: configure_funchook
-      run: cmake -S third-party/funchook -B third-party/funchook/build -G "Visual Studio 18 2026" -A x64
+      run: cmake -S third-party/funchook -B third-party/funchook/build -G "Visual Studio 17 2022" -A x64 -T version=14.44.35207
       shell: cmd
     - name: build_core
       run: |
-        MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64
+        MSBuild "shroudtopia.sln" /t:shroudtopia /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64 /p:PlatformToolset=v143 /p:VCToolsVersion=14.44.35207
+        if errorlevel 1 exit /b 1
+        MSBuild "winmm\winmm.vcxproj" /t:Build /p:Configuration=Release /p:OutDir="${{ github.workspace }}/build/" /p:Platform=x64 /p:PlatformToolset=v143 /p:VCToolsVersion=14.44.35207
+        if errorlevel 1 exit /b 1
       shell: cmd
     - name: test_manifest_discovery
       run: |
-        cmake -S shroudtopia/tests -B build/loader-tests -A x64
+        cmake -S shroudtopia/tests -B build/loader-tests -G "Visual Studio 17 2022" -A x64 -T version=14.44.35207
         if errorlevel 1 exit /b 1
         cmake --build build/loader-tests --config Release
         if errorlevel 1 exit /b 1

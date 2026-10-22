@@ -1,0 +1,21 @@
+{
+  "upstream": "https://github.com/TsudaKageyu/minhook",
+  "version": "1.3.4 with retained reviewed suspension fixes",
+  "recoveredFrom": "E:\\Build\\esm-production-loading-20261019\\pl04\\esm-native-06-build-source\\R\\native\\vendor\\minhook-1.3.4",
+  "referencePinFile": "E:\\Worktrees\\shroudforge-shroudweave-20261020\\modules\\mod-runtime\\native-adapters\\esm-source\\cmake\\process_detour_owner.cmake",
+  "files": {
+    "include/MinHook.h": "4862bf248d2e251c01ee4d63f6a91b3f689ed436bcb013bcd02faf8749bc976c",
+    "src/buffer.c": "0ab484d7870c3a8e7a3a1ee61e2070072cf445ed85b619d4c4207fed34356d99",
+    "src/buffer.h": "9769702bd625249e59a19ede05c84365fcc7707e1fa0e5df08df42227cee13e3",
+    "src/hook.c": "ff417ba86ef13d06ac134de99f3a30705b4d30b247c3bcabc3a9497389930596",
+    "src/trampoline.c": "f13a169f803ff5a8e45c58ce668b4377a9878c0fc4452369b8a1325065186b2b",
+    "src/trampoline.h": "53ed9934492320617a27bfd952ffe7f5b7a4a1d09963d4512447082fe7b727b4",
+    "src/hde/hde64.c": "824eafa315322e6da105a7ce4ec1fc0e0adeee0106d32152fbb0b59e709bd15c",
+    "src/hde/hde64.h": "e99aa4997bda14b534c614c3d8cb78a72c4aca91a1212c8b03ec605d1d75e36e",
+    "src/hde/table64.h": "b774446d2f110ce954fb0a710f4693c5562ddbd8d56fe84106f2ee80db8b50a2",
+    "src/hde/pstdint.h": "604d1cdf45c5a95bc9cf1bbf39ca05ef83013541101d34971c5cd7577e3d5247",
+    "LICENSE.txt": "d5c2224982b0b95a16b098a561335fa93f3eaf4d0aa964b7843edb986df78dc8",
+    "AUTHORS.txt": "073b4e8b0a5a0cd9f4dfa838369f4fc7a4f47151d930b4e1fd891644060a897f"
+  },
+  "license": "BSD-2-Clause; bundled LICENSE.txt and AUTHORS.txt"
+}

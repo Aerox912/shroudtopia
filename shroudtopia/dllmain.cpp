@@ -3,6 +3,7 @@
 #include "mem.h"
 #include "utils.h"
 #include "shroudtopia.h"
+#include "detour_service.h"
 
 #include <filesystem>
 #include <sstream>
@@ -255,16 +256,7 @@ bool ModContext_InjectShellcode(uint8_t* opcode, size_t opcodeSize, uintptr_t ne
     }
 }
 
-bool ModContext_CreateDetour(LPVOID targetFunction, LPVOID detourFunction, void** trampoline = nullptr) {
-    //Mem::Detour detour((uintptr_t)targetFunction, detourFunction, true);
-    //if (!detour.activate()) {
-    //    ModLog("Failed to install detour");
-    //    return false;
-    //}
-    //if (trampoline) *trampoline = detour.originalFunction;
-    //ModLog("Successfully installed detour");
-    return true;
-}
+
 
 // Entry point for the DLL
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID lpReserved) {

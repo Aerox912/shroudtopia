@@ -37,6 +37,12 @@
 </table>
 </p>
 
+## Project status and links
+
+This repository preserves the Shroudtopia compatibility layer for Shroudweave. Changes to the upstream layer here are maintenance-only. Shroudtopia is the MIT-licensed upstream project by Miguel Oppermann (s0t7x): [source repository](https://github.com/s0t7x/shroudtopia).
+
+Current public Shroudweave Loader release: [v0.2.1-shroudweave.1](https://github.com/Aerox912/shroudtopia/releases/tag/v0.2.1-shroudweave.1). Public Shroudweave Loader listing: [Nexus Mods](https://www.nexusmods.com/enshrouded/mods/216).
+
 ## Modloader Features
 
 - **Mod Management**: Dynamically load and unload mods from the "mods" folder.
@@ -49,9 +55,9 @@
 - [Microsoft Visual C++ Redistributable x64](https://aka.ms/vs/17/release/vc_redist.x64.exe)
 
 ### Steps to Install:
-1. **Download the Mod Loader:** Get the latest Shroudtopia binaries from the [release section](https://github.com/s0t7x/shroudtopia/releases).
+1. **Download the Mod Loader:** Download the current [public Shroudweave Loader release](https://github.com/Aerox912/shroudtopia/releases/tag/v0.2.1-shroudweave.1).
 2. **Extract the Files:** Extract the contents into your Enshrouded game or dedicated server folder.
-3. **Download Example Mods:** You can download example mods from the [release section](https://github.com/s0t7x/shroudtopia/releases).
+3. **Choose an example mod:** See the [Flight Mod](example-mods/flight_mod/README.md) and [First Person View](example-mods/first_person_view/README.md) documentation for the retained modules and their requirements.
 4. **Create Mods Folder:** If it doesn’t already exist, create a `mods` folder and place your mod DLLs inside.
 5. **Launch the Server:** Start the server. A default config (`shroudtopia.json`) will be generated if it's absent.
 
@@ -67,7 +73,7 @@ Upon the first launch, a default configuration file `shroudtopia.json` is create
 
 ## Configuration
 
-Each mod can be enabled or customized via the `shroudtopia.json` config file. Here’s an example configuration:
+Each mod can be enabled or customized via the shroudtopia.json config file. This example shows the retained module keys; both modules start disabled here.
 
 ```json
 {
@@ -76,20 +82,13 @@ Each mod can be enabled or customized via the `shroudtopia.json` config file. He
     "enableLogging": true,
     "logLevel": "INFO",
     "mods": {
-        "basics": {
-            "active": true,
-            "no_stamina_loss": true,
-            "no_fall_damage": true,
-            "no_resource_cost": true,
-            "inf_item_use": true,
-            "unlock_blueprints": true,
-            "inf_item_split": true
-        },
         "Flight Mod": {
-            "active": true
+            "active": false,
+            "toggle_key": 117
         },
         "FirstPersonView": {
-            "active": true
+            "active": false,
+            "camera_distance": -0.15
         }
     },
     "updateDelay": 500
@@ -106,62 +105,29 @@ Mods are free to expose configuration options.
 
 ## Example Mods
 
-### Basics Mod
-Some may have no fun with fall damage. Others may just want to have kind of a creative mode. You can selectively activate essential basic mods in the configuration file.
-
-Configuration options:
-```json
-"basics": {
-    "active": true,
-    "no_stamina_loss": true,
-    "no_fall_damage": true,
-    "no_resource_cost": true,
-    "inf_item_use": true,
-    "unlock_blueprints": true,
-    "inf_item_split": true
-}
-```
+These are the retained examples in this checkout. Follow their module documentation for configuration and compatibility details.
 
 ### Flight Mod
 
-<p align="center">
-<img alt="Flight Mod" src="https://github.com/s0t7x/shroudtopia/blob/main/example-mods/flight_mod/demo_crop.gif">
-</p>
-
-Enjoy full flight capabilities with the glider. **No more losing height!**
-
-Configuration options:
-```json
-"Flight Mod": {
-    "active": true
-}
-```
-
+The client module toggles free glider flight. Dedicated-server flight is not supported by this client DLL alone. Real-game flight and popup acceptance remains required before release. See the [Flight Mod README](example-mods/flight_mod/README.md).
 
 ### First Person View
-Play Enshrouded from **another persepctive**. Example for client-only mod.
 
-<p align="center">
-<img alt="Flight Mod" src="https://github.com/s0t7x/shroudtopia/blob/main/example-mods/first_person_view/demo_crop.gif">
-</p>
-
-Configuration options:
-```json
-"FirstPersionView": {
-    "active": true
-}
-```
+The client module restores the first-person camera on supported layouts. See the [First Person View README](example-mods/first_person_view/README.md) for supported client details and configuration.
 
 # Creating Mods
-Mods for Shroudtopia are written as dynamic libraries (DLLs) and need to include `shroudtopia.h` from `./shroudtopia/`.
-They must implement the `Mod` interface and provide the factory function `extern "C" __declspec(dllexport) Mod* CreateModInstance()`.
 
-Here’s an example factory function:
+Mods for Shroudtopia are written as dynamic libraries (DLLs) and include `shroudtopia.h` from the `include/` directory. Each mod implements the Mod interface and exports the factory function extern "C" __declspec(dllexport) Mod* CreateModInstance().
+
+The retained First Person View example defines FirstPersonMod and exports this factory from example-mods/first_person_view/dllmain.cpp:
 ```cpp
-extern "C" __declspec(dllexport) Mod* CreateModInstance() {
-    return new BasicsMod();
+extern "C" __declspec(dllexport) Mod* CreateModInstance()
+{
+    return new FirstPersonMod();
 }
 ```
+
+See the [First Person View README](example-mods/first_person_view/README.md) and source for the complete implementation.
 
 ## Mod Interface
 Every mod must implement the following functions to integrate with the modloader:
@@ -198,8 +164,8 @@ bool enabled = modContext->config.GetBool("modName", "feature_name", false);
 ```
 
 # Contributing
-Currently no really game specific functions are implemented in the modContext. This is first try. Anyways, contributions are welcome! Fork the repository, add improvements, and submit pull requests. I would be happy to see more mods for this around.
 
+Changes to the Shroudtopia compatibility layer are maintenance-only. Preserve the upstream MIT license and notices, keep compatibility contracts explicit, and document retained modules with accurate support and acceptance details.
 
 # License
 This project is licensed under the [MIT License](https://github.com/s0t7x/shroudtopia/blob/0.1-stable/LICENSE).

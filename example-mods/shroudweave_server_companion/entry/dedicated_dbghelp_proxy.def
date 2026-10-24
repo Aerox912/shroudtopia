@@ -1,0 +1,4 @@
+LIBRARY dbghelp
+EXPORTS
+    MiniDumpWriteDump=EsmMiniDumpWriteDump
+    EsmDedicatedGate_GetApiV1

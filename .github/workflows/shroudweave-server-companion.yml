@@ -1,0 +1,54 @@
+name: Build Shroudweave server companion
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    steps:
+      - name: Check out source and pinned dependencies
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          submodules: recursive
+      - name: Configure server companion
+        shell: cmd
+        run: cmake -S example-mods/shroudweave_server_companion -B build/shroudweave-server-companion -G "Visual Studio 18 2026" -A x64
+      - name: Build companion and CTest fixtures
+        shell: cmd
+        run: cmake --build build/shroudweave-server-companion --config Release --parallel
+      - name: Run companion CTest suite
+        shell: cmd
+        run: ctest --test-dir build/shroudweave-server-companion -C Release --output-on-failure
+      - name: Assemble source-bound companion artifact
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $binary = Join-Path $env:GITHUB_WORKSPACE 'build\shroudweave-server-companion\Release\dbghelp.dll'
+          $module = Join-Path $env:GITHUB_WORKSPACE 'example-mods\shroudweave_server_companion'
+          $package = Join-Path $env:RUNNER_TEMP 'shroudweave-server-companion'
+          New-Item -ItemType Directory -Force $package | Out-Null
+          Copy-Item -LiteralPath $binary -Destination $package
+          Copy-Item -LiteralPath (Join-Path $module 'README.md') -Destination $package
+          Copy-Item -LiteralPath (Join-Path $module 'CREDITS-AND-PROVENANCE.md') -Destination $package
+          Copy-Item -LiteralPath (Join-Path $module 'MODLOADER-PROXY-LICENSE') -Destination $package
+          $files = Get-ChildItem $package -File | Sort-Object Name | ForEach-Object {
+            [ordered]@{ name = $_.Name; size = $_.Length; sha256 = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant() }
+          }
+          [ordered]@{ source_commit = '${{ github.sha }}'; workflow_run_id = '${{ github.run_id }}'; files = $files } |
+            ConvertTo-Json -Depth 4 | Set-Content -Encoding utf8 (Join-Path $package 'manifest.json')
+      - name: Upload server companion artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: shroudweave-server-companion-${{ github.sha }}
+          path: ${{ runner.temp }}/shroudweave-server-companion/*
+          if-no-files-found: error
+          retention-days: 90

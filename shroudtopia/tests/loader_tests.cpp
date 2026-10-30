@@ -5,8 +5,10 @@
 #include "mod_discovery.h"
 
 int manifestConfigCalls = 0;
-void ProcessModManifestConfig(const std::string&, const json&) {
+int creativeConfigCalls = 0;
+void ProcessModManifestConfig(const std::string& modId, const json&) {
     ++manifestConfigCalls;
+    if (modId == "creative") ++creativeConfigCalls;
 }
 
 json Config::jConfig;
@@ -33,17 +35,38 @@ int main() {
         // The real production directory scanner must reject a foreign manifest
         // before LoadLibrary invokes its DLL entry point or changes defaults.
         const auto mods = root / "mods";
-        const auto creative = mods / "creative";
-        fs::create_directories(creative);
-        const auto foreign = creative / "creative.dll";
+        const auto inlineCreative = mods / "inline-flame";
+        fs::create_directories(inlineCreative);
+        const auto foreign = inlineCreative / "creative.dll";
         fs::copy_file(fixtures / "flame_fixture.dll", foreign);
         {
-            std::ofstream manifest(creative / "mod.json");
-            manifest << R"({"id":"creative","flame":{"dll":"creative.dll"}})";
+            std::ofstream manifest(inlineCreative / "mod.json");
+            manifest << R"({"id":"inline-flame","flame":{"dll":"creative.dll"}})";
+        }
+        const auto sidecarOwned = mods / "creative";
+        fs::create_directories(sidecarOwned);
+        const auto sidecarOwnedDll = sidecarOwned / "creative.dll";
+        fs::copy_file(fixtures / "flame_fixture.dll", sidecarOwnedDll);
+        {
+            std::ofstream manifest(sidecarOwned / "mod.json");
+            manifest << "{\"id\":\"creative\",\"name\":\"Creative Mode\",\"version\":\"3.0.1\"}";
+        }
+        {
+            std::ofstream flame(sidecarOwned / "flame.json");
+            flame << R"({ "dll": "creative.dll" })";
         }
         CheckAndLoadDlls(mods.string());
         check(!fs::exists(foreign.string() + ".loads"), "Flame-only manifest must not execute DllMain");
         check(manifestConfigCalls == 0, "foreign manifest must not change native defaults");
+        check(!fs::exists(sidecarOwnedDll.string() + ".loads"), "external flame.json must reject a native-looking mod before DllMain");
+        check(manifestConfigCalls == 0, "external flame.json ownership must be checked before native defaults");
+        check(creativeConfigCalls == 0, "Creative 3.0.1 mod.json must be skipped while Flame owns its folder");
+        LoadAndRegisterMod(sidecarOwnedDll.string());
+        check(!fs::exists(sidecarOwnedDll.string() + ".loads"), "direct native probes must also honor flame.json ownership");
+        for (int i = 0; i < 100; ++i) CheckAndLoadDlls(mods.string());
+        check(!fs::exists(sidecarOwnedDll.string() + ".loads"), "polling never probes a sidecar-owned Flame DLL");
+        check(manifestConfigCalls == 0, "polling never processes sidecar-owned native defaults");
+        check(creativeConfigCalls == 0, "polling never processes the Creative 3.0.1 manifest under Flame ownership");
 
         const auto sidecar = root / "sidecar.dll";
         fs::copy_file(fixtures / "xhl_fixture.dll", sidecar);
@@ -159,13 +182,32 @@ int main() {
         // A corrected manifest must be reconsidered without restarting or
         // touching the incompatible-DLL cache or timestamps.
         fs::copy_file(fixtures / "valid_fixture.dll", foreign, fs::copy_options::overwrite_existing);
-        writeManifest(creative, R"({"id":"creative","shroudtopia":{"default":{}}})");
+        writeManifest(inlineCreative, R"({"id":"inline-flame","shroudtopia":{"default":{}}})");
         CheckAndLoadDlls(mods.string());
         check(fs::file_size(foreign.string() + ".loads") == 1, "corrected ownership is discovered on the next scan");
         check(testContext.registeredMods.size() == 8, "corrected ownership registers");
         for (int i = 0; i < 100; ++i) CheckAndLoadDlls(mods.string());
         check(fs::file_size(foreign.string() + ".loads") == 1, "corrected native mod registers once");
         check(!fs::exists(foreignFallback.string() + ".loads"), "foreign fallback remains untouched alongside native mods");
+
+        fs::remove(sidecarOwned / "flame.json");
+        CheckAndLoadDlls(mods.string());
+        check(fs::file_size(sidecarOwnedDll.string() + ".loads") == 1,
+              "removing flame.json makes the native module eligible on the next scan");
+        check(creativeConfigCalls == 1,
+              "Creative's mod.json becomes visible to native discovery after Flame ownership is removed");
+
+        const auto lateDirectory = root / "late-directory";
+        const auto lateDll = lateDirectory / "late.dll";
+        const auto registrationsBeforeLateRetry = testContext.registeredMods.size();
+        LoadAndRegisterMod(lateDll.string());
+        fs::create_directories(lateDirectory);
+        fs::copy_file(fixtures / "valid_fixture.dll", lateDll);
+        LoadAndRegisterMod(lateDll.string());
+        check(fs::file_size(lateDll.string() + ".loads") == 1,
+              "missing mod directories remain retryable when created later");
+        check(testContext.registeredMods.size() == registrationsBeforeLateRetry + 1,
+              "a DLL becomes loadable after its previously missing directory appears");
         for (auto& entry : testContext.registeredMods) delete entry.second;
         testContext.registeredMods.clear();
         for (auto& entry : loadedDLLs) FreeLibrary(entry.second);

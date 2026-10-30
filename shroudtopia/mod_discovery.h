@@ -20,6 +20,13 @@ inline void CheckAndLoadDlls(const std::string& modFolder = SHROUDTOPIA_MOD_FOLD
             fs::path dirPath = entry.path();
             fs::path manifestPath = dirPath / "mod.json";
 
+            // Flame's standalone sidecar claims the folder independently of
+            // mod.json. Check before parsing native defaults or probing any
+            // DLL so a foreign module never executes DllMain here.
+            if (mod_loader_detail::HasExternalFlameSidecar(dirPath)) {
+                continue;
+            }
+
             if (fs::exists(manifestPath)) {
                 try {
                     std::ifstream f(manifestPath);

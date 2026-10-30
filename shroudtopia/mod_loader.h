@@ -36,9 +36,34 @@ inline void PruneIncompatibleDlls() {
     }
 }
 
+namespace mod_loader_detail {
+inline bool HasExternalFlameSidecar(const std::filesystem::path& modDirectory) {
+    auto directory = modDirectory;
+    std::error_code error;
+    if (directory.empty()) {
+        directory = std::filesystem::current_path(error);
+        if (error) return true;
+    }
+
+    const bool directoryExists = std::filesystem::exists(directory, error);
+    if (error) return true;
+    if (!directoryExists) return false;
+
+    const bool present = std::filesystem::exists(directory / "flame.json", error);
+    // Ownership is ambiguous when the sidecar cannot be inspected. Fail
+    // closed so an uncertain foreign module is never probed by LoadLibrary.
+    return present || static_cast<bool>(error);
+}
+} // namespace mod_loader_detail
+
 // Load a mod and register it
 inline void LoadAndRegisterMod(const std::string& dllPath) {
     if (loadedDLLs.count(dllPath)) return;
+
+    if (mod_loader_detail::HasExternalFlameSidecar(std::filesystem::path(dllPath).parent_path())) {
+        Utils::Log(Utils::DEBUG, "Skipping Flame-owned mod DLL: %s", dllPath.c_str());
+        return;
+    }
 
     const auto stamp = ReadDllStamp(dllPath);
     const auto rejected = incompatibleDLLs.find(dllPath);
